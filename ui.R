@@ -25,14 +25,14 @@ shinyUI(
             fluidRow(
               column(6,
                 numericInput("mindiff",
-                             "From",
+                             "Min",
                              value = 100,
                              max = 100,
                              step = 5)
               ),
               column(6,
                 numericInput("maxdiff",
-                             "To",
+                             "Max",
                              value = 100,
                              min = 100,
                              step = 5)
@@ -46,6 +46,7 @@ shinyUI(
               numericInput("ratio",
                            "Treatment:Control Ratio",
                            value = 1,
+                           min = 0.1,
                            step = 0.1)
             ),
             radioButtons("alternative",
