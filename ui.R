@@ -1,7 +1,10 @@
 library(shiny)
+library(ggvis)
 
+## Observed and predicted clinical outcomes
 load("Outcomes.RData")
 
+## User interface
 shinyUI(
   fluidPage(
     titlePanel("PPMI Trial Design Tool"),
@@ -21,12 +24,16 @@ shinyUI(
             textOutput("nullmean",
                        container = span),
             hr(),
+            selectInput("alternative",
+                        "Alternative Hypothesis",
+                        c("Two-sided", "Less Than", "Greater Than")),
             strong("Mean Difference (%)"),
             fluidRow(
               column(6,
                 numericInput("mindiff",
                              "Min",
-                             value = 100,
+                             value = 25,
+                             min = 0,
                              max = 100,
                              step = 5)
               ),
@@ -34,25 +41,21 @@ shinyUI(
                 numericInput("maxdiff",
                              "Max",
                              value = 100,
-                             min = 100,
+                             min = 25,
                              step = 5)
               )
             ),
-            radioButtons("groups",
-                         "Study Groups",
-                         c("Treatment Only", "Treatment and Control")),
+            selectInput("groups",
+                        "Study Groups",
+                        c("Treatment Only", "Treatment and Control")),
             conditionalPanel(
               condition = "input.groups == 'Treatment and Control'",
               numericInput("ratio",
                            "Treatment:Control Ratio",
-                           value = 1,
-                           min = 0.1,
+                           value = 0,
+                           min = 0,
                            step = 0.1)
             ),
-            radioButtons("alternative",
-                         "Alternative Hypothesis",
-                         c("Two-sided", "One-sided"),
-                         inline = TRUE),
             numericInput("alpha",
                          "Significance Level",
                          value = 0.05,
@@ -73,7 +76,7 @@ shinyUI(
         verbatimTextOutput("summary"),
         br(),
         h4("Sample Size Estimates"),
-        plotOutput("samplesize")
+        ggvisOutput("samplesize")
       )
     )
 ))
