@@ -6,6 +6,11 @@ offsetdiff <- 5
 digits <- 4
 labels <- character(0)
 
+## Format outcome range for display
+format.range <- function(range) {
+  paste0("[", range[1], ", ", range[2], "]")
+}
+  
 ## ggvis tooltip function
 samplesize.label <- function(x) {
   if(is.null(x)|| !all(c("pct", "N") %in% names(x))) return(NULL)
@@ -63,59 +68,65 @@ shinyServer(function(input, output, session) {
     subset(AllVals(), pred >= input$range[1] & pred <= input$range[2])
   })
   
-  nullmean <- reactive({
-    mean(Vals()$obs)
-  })
-  
   output$nullmean <- renderText({
-    signif(nullmean(), digits)
+    signif(mean(Vals()$obs), digits)
   })
   
   output$summary <- renderPrint({
     n <- nrow(AllVals())
     m <- nrow(Vals())
     cat("Subjects with outcome measurements: ", n, "\n",
-        "Number within [", input$range[1], ", ", input$range[2], "]: ", m,
+        "Number within ", format.range(input$range), ": ", m,
         " (", round(100 * m / n, 1), "%)\n\n", sep="")
     summary(Vals()$obs)
   })
   
   samplesize <- reactive({
-    s2 <- var(Vals()$obs)
-
+    cohort <- c("All", format.range(input$range))
     df <- if(is.finite(input$mindiff) && is.finite(input$maxdiff)) {
-      data.frame(pct = seq(input$mindiff, input$maxdiff, length=11))
+      n <- 11
+      data.frame(
+        cohort = factor(rep(cohort, times = n), levels = cohort),
+        pct = rep(seq(input$mindiff, input$maxdiff, length = n), each = 2)
+      )
     } else {
-      data.frame(pct = 100)
+      data.frame(
+        cohort = factor(cohort, levels = cohort),
+        pct = 100
+      )
     }
-    df$meandiff <- nullmean() * df$pct / 100
+    
+    nullmean <- c(mean(AllVals()$obs), mean(Vals()$obs))
+    df$meandiff <- nullmean * df$pct / 100
 
     if(input$alternative == "Two-sided") {
       alpha <- input$alpha / 2
-      labels <<- paste(signif(nullmean() - df$meandiff, digits),
+      labels <<- paste(signif(nullmean - df$meandiff, digits),
                        "or",
-                       signif(nullmean() + df$meandiff, digits))
+                       signif(nullmean + df$meandiff, digits))
     } else if(input$alternative == "Less Than") {
       alpha <- input$alpha
-      labels <<- as.character(signif(nullmean() - df$meandiff, digits))
+      labels <<- as.character(signif(nullmean - df$meandiff, digits))
     } else if(input$alternative == "Greater Than") {
       alpha <- input$alpha
-      labels <<- as.character(signif(nullmean() + df$meandiff, digits))
+      labels <<- as.character(signif(nullmean + df$meandiff, digits))
     }
-    
-    df$N <- s2 * (1 + input$ratio) * ((qnorm(input$power) + qnorm(1 - alpha)) /
-                                        df$meandiff)^2
+
+    sigmasq <- c(var(AllVals()$obs), var(Vals()$obs))    
+    df$N <- sigmasq * (1 + input$ratio) *
+              ((qnorm(input$power) + qnorm(1 - alpha)) / df$meandiff)^2
     
     df$index <- 1:nrow(df)
     df$x <- df$N
     df$y <- df$pct
 
     df %>%
-      ggvis(x = ~ N, y = ~ pct, key := ~ index) %>%
+      ggvis(x = ~ N, y = ~ pct, stroke = ~ cohort) %>%
       add_axis("x", title = "Treatment Group Sample Size") %>%
       add_axis("y", title = "Mean Difference (%)") %>%
-      layer_points() %>%
+      add_legend("stroke", title = "Cohort") %>%
       layer_lines(x = ~ x, y = ~ y) %>%
+      layer_points(key := ~ index) %>%
       add_tooltip(samplesize.label, "hover")
   })
   
