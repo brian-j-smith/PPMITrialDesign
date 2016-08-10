@@ -20,6 +20,13 @@ samplesize.label <- function(x) {
          "Sample Size: ", x$N)
 }
 
+## Descriptive statistics
+describe <- function(x, digits = max(3, getOption("digits") - 3)) {
+  stats <- c(mean(x), sd(x), quantile(x, c(0, 0.25, 0.5, 0.75, 1)))
+  structure(signif(stats, digits), names = c("Mean", "Std Dev", "Min", "25th",
+                                             "Median", "75th", "Max"))
+}
+
 ## Server functionality
 shinyServer(function(input, output, session) {
   
@@ -131,9 +138,9 @@ shinyServer(function(input, output, session) {
     n <- nrow(AllVals())
     m <- nrow(Vals())
     cat("Subjects with outcome measurements: ", n, "\n",
-        "Number within ", format.range(input$range), ": ", m,
+        "Predicted to be in ", format.range(input$range), ": ", m,
         " (", round(100 * m / n, 1), "%)\n\n", sep="")
-    summary(Vals()$obs)
+    describe(Vals()$obs, digits=digits)
   })
   
   bind_shiny(samplesize, "ssPlot")
