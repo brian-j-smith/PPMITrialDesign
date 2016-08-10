@@ -27,7 +27,7 @@ shinyUI(
             selectInput("alternative",
                         "Alternative Hypothesis",
                         c("Two-sided", "Less Than", "Greater Than")),
-            strong("Mean Difference (%)"),
+            strong("Relative Difference (%)"),
             fluidRow(
               column(6,
                 numericInput("mindiff",
@@ -74,9 +74,9 @@ shinyUI(
       mainPanel(
         h4("PD Cohort Statistics"),
         verbatimTextOutput("summary"),
-        br(),
         h4("Sample Size Estimates"),
-        ggvisOutput("samplesize")
+        ggvisOutput("ssPlot"),
+        dataTableOutput("ssTable")
       )
     )
 ))

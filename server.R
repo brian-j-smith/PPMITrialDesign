@@ -1,10 +1,11 @@
 library(shiny)
+library(DT)
 library(ggvis)
 
 ## Global variables
 offsetdiff <- 5
 digits <- 4
-labels <- character(0)
+altlabel <- character(0)
 
 ## Format outcome range for display
 format.range <- function(range) {
@@ -14,9 +15,9 @@ format.range <- function(range) {
 ## ggvis tooltip function
 samplesize.label <- function(x) {
   if(is.null(x)|| !all(c("pct", "N") %in% names(x))) return(NULL)
-  paste0("Difference: ", round(x$pct, 1), "%<br />",
-         "Alternative Mean: ", labels[x$index], "<br />",
-         "Sample Size: ", ceiling(x$N))
+  paste0("Difference: ", x$pct, "%<br />",
+         "Alternative Mean: ", altlabel[x$index], "<br />",
+         "Sample Size: ", x$N)
 }
 
 ## Server functionality
@@ -68,6 +69,60 @@ shinyServer(function(input, output, session) {
     subset(AllVals(), pred >= input$range[1] & pred <= input$range[2])
   })
   
+  samplesize.data <- reactive({
+    cohort <- c("All", format.range(input$range))
+    df <- if(is.finite(input$mindiff) && is.finite(input$maxdiff)) {
+      n <- 11
+      data.frame(
+        cohort = factor(rep(cohort, times = n), levels = cohort),
+        pct = round(rep(seq(input$mindiff, input$maxdiff, length = n),
+                        each = 2), 1)
+      )
+    } else {
+      data.frame(
+        cohort = factor(cohort, levels = cohort),
+        pct = 100
+      )
+    }
+    
+    df$nullmean <- c(mean(AllVals()$obs), mean(Vals()$obs))
+    df$meandiff <- df$nullmean * df$pct / 100
+
+    if(input$alternative == "Two-sided") {
+      alpha <- input$alpha / 2
+      altlabel <<- paste(signif(df$nullmean - df$meandiff, digits),
+                         "or",
+                         signif(df$nullmean + df$meandiff, digits))
+    } else if(input$alternative == "Less Than") {
+      alpha <- input$alpha
+      altlabel <<- as.character(signif(df$nullmean - df$meandiff, digits))
+    } else if(input$alternative == "Greater Than") {
+      alpha <- input$alpha
+      altlabel <<- as.character(signif(df$nullmean + df$meandiff, digits))
+    }
+
+    sigmasq <- c(var(AllVals()$obs), var(Vals()$obs))
+    df$N <- ceiling(sigmasq * (1 + input$ratio) *
+                      ((qnorm(input$power) + qnorm(1 - alpha)) / df$meandiff)^2)
+    
+    df$index <- 1:nrow(df)
+    df$x <- df$N
+    df$y <- df$pct
+
+    df
+  })
+  
+  samplesize <- reactive({
+    samplesize.data() %>%
+      ggvis(x = ~ N, y = ~ pct, stroke = ~ cohort) %>%
+      add_axis("x", title = "Treatment Group Sample Size") %>%
+      add_axis("y", title = "Relative Difference (%)") %>%
+      add_legend("stroke", title = "Cohort") %>%
+      layer_lines(x = ~ x, y = ~ y) %>%
+      layer_points(key := ~ index) %>%
+      add_tooltip(samplesize.label, "hover")
+  })
+  
   output$nullmean <- renderText({
     signif(mean(Vals()$obs), digits)
   })
@@ -81,55 +136,25 @@ shinyServer(function(input, output, session) {
     summary(Vals()$obs)
   })
   
-  samplesize <- reactive({
-    cohort <- c("All", format.range(input$range))
-    df <- if(is.finite(input$mindiff) && is.finite(input$maxdiff)) {
-      n <- 11
-      data.frame(
-        cohort = factor(rep(cohort, times = n), levels = cohort),
-        pct = rep(seq(input$mindiff, input$maxdiff, length = n), each = 2)
-      )
-    } else {
-      data.frame(
-        cohort = factor(cohort, levels = cohort),
-        pct = 100
-      )
-    }
-    
-    nullmean <- c(mean(AllVals()$obs), mean(Vals()$obs))
-    df$meandiff <- nullmean * df$pct / 100
-
-    if(input$alternative == "Two-sided") {
-      alpha <- input$alpha / 2
-      labels <<- paste(signif(nullmean - df$meandiff, digits),
-                       "or",
-                       signif(nullmean + df$meandiff, digits))
-    } else if(input$alternative == "Less Than") {
-      alpha <- input$alpha
-      labels <<- as.character(signif(nullmean - df$meandiff, digits))
-    } else if(input$alternative == "Greater Than") {
-      alpha <- input$alpha
-      labels <<- as.character(signif(nullmean + df$meandiff, digits))
-    }
-
-    sigmasq <- c(var(AllVals()$obs), var(Vals()$obs))    
-    df$N <- sigmasq * (1 + input$ratio) *
-              ((qnorm(input$power) + qnorm(1 - alpha)) / df$meandiff)^2
-    
-    df$index <- 1:nrow(df)
-    df$x <- df$N
-    df$y <- df$pct
-
-    df %>%
-      ggvis(x = ~ N, y = ~ pct, stroke = ~ cohort) %>%
-      add_axis("x", title = "Treatment Group Sample Size") %>%
-      add_axis("y", title = "Mean Difference (%)") %>%
-      add_legend("stroke", title = "Cohort") %>%
-      layer_lines(x = ~ x, y = ~ y) %>%
-      layer_points(key := ~ index) %>%
-      add_tooltip(samplesize.label, "hover")
-  })
+  bind_shiny(samplesize, "ssPlot")
   
-  samplesize %>% bind_shiny("samplesize")
+  output$ssTable <- renderDataTable({
+    df <- subset(samplesize.data(),
+                 select = c(pct, cohort, nullmean, meandiff, N)) %>%
+          mutate(nullmean = signif(nullmean, digits),
+                 meandiff = signif(meandiff, digits))
+    m <- nrow(df)
+    n <- ncol(df)
+    datatable(df,
+              colnames = c("Percent", "Cohort", "Null Mean",
+                           "Absolute Difference", "Sample Size"),
+              rownames = FALSE,
+              options = list(order = list(list(1, 'desc')),
+                             columnDefs = list(list(className = 'dt-center',
+                                                    targets = 1:n - 1)),
+                             pageLength = m / 2,
+                             lengthMenu = c(m / 2, m),
+                             searching = FALSE))
+  })
   
 })
