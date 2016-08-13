@@ -75,8 +75,14 @@ shinyUI(
         h4("PD Cohort Statistics"),
         verbatimTextOutput("summary"),
         h4("Sample Size Estimates"),
-        ggvisOutput("ssPlot"),
-        dataTableOutput("ssTable")
+        tabsetPanel(type = "tabs",
+          tabPanel("Plot",
+                   br(),
+                   ggvisOutput("ssPlot")),
+          tabPanel("Table",
+                   br(),
+                   dataTableOutput("ssTable"))
+        )
       )
     )
 ))

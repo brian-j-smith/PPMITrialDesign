@@ -147,17 +147,18 @@ shinyServer(function(input, output, session) {
   
   output$ssTable <- renderDataTable({
     df <- subset(samplesize.data(),
-                 select = c(pct, cohort, nullmean, meandiff, N)) %>%
+                 select = c(cohort, nullmean, pct, meandiff, N)) %>%
           mutate(nullmean = signif(nullmean, digits),
                  meandiff = signif(meandiff, digits))
     m <- nrow(df)
     n <- ncol(df)
     datatable(df,
-              colnames = c("Percent", "Cohort", "Null Mean",
-                           "Absolute Difference", "Sample Size"),
+              colnames = c("Cohort", "Null Mean", "Relative Difference (%)",
+                           "Absolute Difference", "Treatment Group Sample Size"),
               rownames = FALSE,
-              options = list(order = list(list(1, 'desc')),
+              options = list(order = list(list(0, 'desc')),
                              columnDefs = list(list(className = 'dt-center',
+                                                    width = '100px',
                                                     targets = 1:n - 1)),
                              pageLength = m / 2,
                              lengthMenu = c(m / 2, m),
