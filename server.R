@@ -30,6 +30,15 @@ describe <- function(x, digits = max(3, getOption("digits") - 3)) {
 ## Server functionality
 shinyServer(function(input, output, session) {
   
+  observeEvent(input$outcome, {
+    updateSelectInput(session, "metric", choices = OutcomeVars[[input$outcome]])
+  })
+  
+  observeEvent(input$metric, {
+    val <- range(AllVals()$pred)
+    updateSliderInput(session, "range", value = val, min = val[1], max = val[2])
+  })
+  
   observeEvent(input$groups, {
     updateNumericInput(session, "ratio",
                        value = switch(input$groups,
@@ -63,13 +72,8 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  observeEvent(input$outcome, {
-    val <- range(AllVals()$pred)
-    updateSliderInput(session, "range", value = val, min = val[1], max = val[2])
-  })
-  
   AllVals <- reactive({
-    OutcomeVals[[input$outcome]]
+    OutcomeVals[[input$metric]]
   })
   
   Vals <- reactive({
