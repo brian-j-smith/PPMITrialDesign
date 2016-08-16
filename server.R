@@ -15,8 +15,8 @@ format.range <- function(range) {
 ## ggvis tooltip function
 samplesize.label <- function(x) {
   if(is.null(x)|| !all(c("pct", "N") %in% names(x))) return(NULL)
-  paste0("Difference: ", x$pct, "%<br />",
-         "Alternative Mean: ", altlabel[x$index], "<br />",
+  paste0("Rel Diff: ", x$pct, "%<br />",
+         "Abs Diff: ", altlabel[x$index], "<br />",
          "Sample Size: ", x$N)
 }
 
@@ -101,17 +101,17 @@ shinyServer(function(input, output, session) {
 
     if(input$alternative == "Two-sided") {
       alpha <- input$alpha / 2
-      altlabel <<- paste(signif(df$nullmean - df$meandiff, digits),
-                         "or",
-                         signif(df$nullmean + df$meandiff, digits))
+      plusminus <- "+/-"
     } else if(input$alternative == "Less Than") {
       alpha <- input$alpha
-      altlabel <<- as.character(signif(df$nullmean - df$meandiff, digits))
+      plusminus <- "-"
     } else if(input$alternative == "Greater Than") {
       alpha <- input$alpha
-      altlabel <<- as.character(signif(df$nullmean + df$meandiff, digits))
+      plusminus <- "+"
     }
-
+    altlabel <<- paste(signif(df$nullmean, digits), plusminus,
+                       signif(df$meandiff, digits))
+    
     sigmasq <- c(var(AllVals()$obs), var(Vals()$obs))
     df$N <- ceiling(sigmasq * (1 + input$ratio) *
                       ((qnorm(input$power) + qnorm(1 - alpha)) / df$meandiff)^2)
@@ -132,10 +132,6 @@ shinyServer(function(input, output, session) {
       layer_lines(x = ~ x, y = ~ y) %>%
       layer_points(key := ~ index) %>%
       add_tooltip(samplesize.label, "hover")
-  })
-  
-  output$nullmean <- renderText({
-    signif(mean(Vals()$obs), digits)
   })
   
   output$summary <- renderPrint({
