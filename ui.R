@@ -7,6 +7,7 @@ load("Outcomes.RData")
 ## User interface
 shinyUI(
   fluidPage(
+    div(class = "outer",
     titlePanel("PPMI Trial Design Tool"),
     sidebarLayout(
       sidebarPanel(
@@ -83,5 +84,7 @@ shinyUI(
                    dataTableOutput("ssTable"))
         )
       )
-    )
+    ),
+    tags$div(id = "cite", HTML(paste("Version", VERSION, "&copy 2016, Brian J Smith")))
+  )
 ))
