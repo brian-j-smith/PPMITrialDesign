@@ -1,6 +1,7 @@
 library(shiny)
 library(DT)
 library(ggvis)
+library(caret)
 
 ## Global variables
 offsetdiff <- 5
@@ -134,6 +135,10 @@ shinyServer(function(input, output, session) {
       add_tooltip(samplesize.label, "hover")
   })
   
+  modelFit <- reactive({
+    OutcomeBest[[input$metric]]
+  })
+  
   output$summary <- renderPrint({
     n <- nrow(AllVals())
     m <- nrow(Vals())
@@ -163,6 +168,17 @@ shinyServer(function(input, output, session) {
                              pageLength = m / 2,
                              lengthMenu = c(m / 2, m),
                              searching = FALSE))
+  })
+  
+  output$modelInfo <- renderPrint({
+    print(modelFit())
+  })
+  
+  output$varImp <- renderPlot({
+    plot(varImp(modelFit(), nonpara=FALSE),
+         top = 20, main = "Top 20 Baseline Factors",
+         xlab = "Relative Importance",
+         scales = list(tck = c(1, 0)))
   })
   
 })

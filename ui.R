@@ -15,10 +15,11 @@ shinyUI(
           column(12,
             selectInput("outcome",
                         "Clinical Outcome",
-                        names(OutcomeVars)),
+                        names(OutcomeVars),
+                        selected = AppInfo$selectedOutcome),
             selectInput("metric",
                         "Metric",
-                        OutcomeVars[[1]]),
+                        OutcomeVars[[AppInfo$selectedOutcome]]),
             sliderInput("range",
                         "Predicted Outcome Range",
                         min = 0,
@@ -81,10 +82,14 @@ shinyUI(
                    ggvisOutput("ssPlot")),
           tabPanel("Table",
                    br(),
-                   dataTableOutput("ssTable"))
+                   dataTableOutput("ssTable")),
+          tabPanel("Model Info",
+                   verbatimTextOutput("modelInfo"),
+                   plotOutput("varImp"))
         )
       )
     ),
-    tags$div(id = "cite", HTML(paste("Version", VERSION, "&copy 2016, Brian J Smith")))
+    tags$div(id = "cite", HTML(paste("Version", AppInfo$version,
+                                     "&copy 2016, Brian J Smith")))
   )
 ))
