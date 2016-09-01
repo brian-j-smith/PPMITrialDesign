@@ -8,7 +8,7 @@ load("Outcomes.RData")
 shinyUI(
   fluidPage(
     div(class = "outer",
-    titlePanel("PPMI Trial Design Tool"),
+    titlePanel("Parkinson's Clinical Trials Design Tool"),
     sidebarLayout(
       sidebarPanel(
         fluidRow(
