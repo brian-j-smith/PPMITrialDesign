@@ -1,7 +1,19 @@
 library(shiny)
 library(DT)
 library(ggvis)
+
+## Caret and modeling packages
 library(caret)
+library(gbm)
+library(glmnet)
+library(kernlab)
+library(MASS)
+library(nnet)
+library(pls)
+library(randomForest)
+
+## Observed and predicted clinical outcomes
+load("Outcomes.RData")
 
 ## Global variables
 offsetdiff <- 5
@@ -150,11 +162,11 @@ shinyServer(function(input, output, session) {
   
   bind_shiny(samplesize, "ssPlot")
   
-  output$ssTable <- renderDataTable({
+  output$ssTable <- DT::renderDataTable({
     df <- subset(samplesize.data(),
                  select = c(cohort, nullmean, pct, meandiff, N)) %>%
-          mutate(nullmean = signif(nullmean, digits),
-                 meandiff = signif(meandiff, digits))
+          transform(nullmean = signif(nullmean, digits),
+                    meandiff = signif(meandiff, digits))
     m <- nrow(df)
     n <- ncol(df)
     datatable(df,

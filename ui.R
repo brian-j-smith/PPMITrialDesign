@@ -1,4 +1,5 @@
 library(shiny)
+library(DT)
 library(ggvis)
 
 ## Observed and predicted clinical outcomes
@@ -82,7 +83,7 @@ shinyUI(
                    ggvisOutput("ssPlot")),
           tabPanel("Table",
                    br(),
-                   dataTableOutput("ssTable")),
+                   DT::dataTableOutput("ssTable")),
           tabPanel("Model Info",
                    verbatimTextOutput("modelInfo"),
                    plotOutput("varImp"))
