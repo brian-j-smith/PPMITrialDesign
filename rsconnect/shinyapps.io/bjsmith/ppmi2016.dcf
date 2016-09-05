@@ -2,8 +2,8 @@ name: ppmi2016
 account: bjsmith
 server: shinyapps.io
 appId: 123709
-bundleId: 547736
+bundleId: 549224
 url: https://bjsmith.shinyapps.io/ppmi2016/
-when: 1472831155.50483
+when: 1473091072.57137
 asMultiple: FALSE
 asStatic: FALSE
