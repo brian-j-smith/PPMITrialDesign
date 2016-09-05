@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyBS)
 library(DT)
 library(ggvis)
 
@@ -26,9 +27,17 @@ shinyUI(
                         min = 0,
                         max = 1,
                         value = c(0, 1)),
+            bsTooltip("range",
+                      "Predicted values of patients to include",
+                      placement = "right",
+                      options = list(container = "body")),
             selectInput("alternative",
                         "Alternative Hypothesis",
                         c("Two-sided", "Less Than", "Greater Than")),
+            bsTooltip("alternative",
+                      "Alternative hypothesis for the PD Cohort Mean",
+                      placement = "right",
+                      options = list(container = "body")),
             strong("Relative Mean Difference (%)"),
             fluidRow(
               column(6,
@@ -47,9 +56,21 @@ shinyUI(
                              step = 5)
               )
             ),
+            bsTooltip("mindiff",
+                      "Sets a minimum value for the alternative mean",
+                      placement = "right",
+                      options = list(container = "body")),
+            bsTooltip("maxdiff",
+                      "Sets a maximum value for the alternative mean",
+                      placement = "right",
+                      options = list(container = "body")),
             selectInput("groups",
                         "Study Groups",
                         c("Treatment Only", "Treatment and Control")),
+            bsTooltip("groups",
+                      "One or two-arm trial design",
+                      placement = "right",
+                      options = list(container = "body")),
             conditionalPanel(
               condition = "input.groups == 'Treatment and Control'",
               numericInput("ratio",
@@ -64,12 +85,20 @@ shinyUI(
                          min = 0.01,
                          max = 0.99,
                          step = 0.01),
+            bsTooltip("alpha",
+                      "Probability of a false positive test",
+                      placement = "right",
+                      options = list(container = "body")),
             numericInput("power",
                          "Power",
                          value = 0.80,
                          min = 0.01,
                          max = 0.99,
-                         step = 0.01)
+                         step = 0.01),
+            bsTooltip("power",
+                      "Probability of a true positive test",
+                      placement = "right",
+                      options = list(container = "body"))
           )
         )
       ),
