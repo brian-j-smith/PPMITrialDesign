@@ -79,6 +79,10 @@ shinyUI(
                            min = 0,
                            step = 0.1)
             ),
+            bsTooltip("ratio",
+                      "Planned enrollment ratio of Treatment to Control patients",
+                      placement = "right",
+                      options = list(container = "body")),
             numericInput("alpha",
                          "Significance Level",
                          value = 0.05,
